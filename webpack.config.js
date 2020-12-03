@@ -17,7 +17,8 @@ const widgetConfig = {
         DropDownSort: "./src/DropDownSort/components/DropDownSortContainer.ts",
         TextBoxSearch: "./src/TextBoxSearch/components/TextBoxSearchContainer.ts",
         Pagination: "./src/Pagination/components/PaginationContainer.ts",
-        HeaderSort: "./src/HeaderSort/components/HeaderSortContainer.ts"
+        HeaderSort: "./src/HeaderSort/components/HeaderSortContainer.ts",
+        XPathConstraint: "./src/XPathConstraint/components/XPathConstraintContainer.ts"
     },
     output: {
         path: path.resolve(__dirname, "dist/tmp"),
@@ -107,7 +108,8 @@ const previewConfig = {
         DropDownSort: "./src/DropDownSort/DropDownSort.webmodeler.ts",
         TextBoxSearch: "./src/TextBoxSearch/TextBoxSearch.webmodeler.ts",
         Pagination: "./src/Pagination/Pagination.webmodeler.ts",
-        HeaderSort: "./src/HeaderSort/HeaderSort.webmodeler.ts"
+        HeaderSort: "./src/HeaderSort/HeaderSort.webmodeler.ts",
+        XPathConstraint: "./src/XPathConstraint/XPathConstraint.webmodeler.ts"
     },
     output: {
         path: path.resolve(__dirname, "dist/tmp"),
