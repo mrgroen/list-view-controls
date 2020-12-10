@@ -20,7 +20,7 @@ export interface ContainerState {
     targetListView?: DataSourceHelperListView;
     validationPassed?: boolean;
     isChecked: boolean;
-    xpathConstraint?: string;
+    xpathConstraintValue?: string;
 }
 
 interface FormState {
@@ -46,6 +46,7 @@ export default class XPathConstraintContainer extends Component<ContainerProps, 
         });
 
         this.state = {
+            xpathConstraintValue: "",
             isChecked: true,
             listViewAvailable: false,
             alertMessage: Validate.validateProps(this.props)
@@ -100,55 +101,73 @@ export default class XPathConstraintContainer extends Component<ContainerProps, 
         this.viewStateManager.destroy();
     }
 
+    private updateState(mxObject = this.props.mxObject): ContainerState {
+        logger.debug(this.props.uniqueid, "updateState - mxObject:" + mxObject.getGuid(), this.props.group);
+        return {
+            isChecked: this.state.isChecked,
+            listViewAvailable: this.state.listViewAvailable,
+            alertMessage: ""
+        };
+    }
+/*
     private getAttributeValue(attribute: string, mxObject?: mendix.lib.MxObject): string {
         return (mxObject !== undefined ? mxObject.get(attribute) as string : "");
     }
+*/
+    private getXPathConstraint(): string {
+        return this.props.mxObject ? this.props.mxObject.get(this.props.xpathConstraintAttribute).toString() : "";
+    }
 
     private resetSubscriptions(mxObject?: mendix.lib.MxObject): void {
+        logger.debug(this.props.uniqueid, "resetSubscriptions", this.props.group);
         this.subscriptionHandles.forEach(mx.data.unsubscribe);
         this.subscriptionHandles = [];
 
         if (mxObject) {
             this.subscriptionHandles.push(
                 mx.data.subscribe({
-                    callback: this.subscriptionCallback,
-                    guid: mxObject.getGuid()
-                })
-            );
-
-            this.subscriptionHandles.push(
-                mx.data.subscribe({
-                    attr: this.props.xpathConstraintAttribute,
-                    callback: this.subscriptionCallback,
-                    guid: mxObject.getGuid()
-                })
-            );
-
-            this.subscriptionHandles.push(
-                mx.data.subscribe({
-                    callback: this.handleValidations,
                     guid: mxObject.getGuid(),
+                    callback: this.subscriptionCallback
+                })
+            );
+/*
+            this.subscriptionHandles.push(
+                mx.data.subscribe({
+                    guid: mxObject.getGuid(),
+                    attr: this.props.xpathConstraintAttribute.split(".").pop() as string,
+                    callback: this.subscriptionCallback
+                })
+            );
+*/
+            this.subscriptionHandles.push(
+                mx.data.subscribe({
+                    guid: mxObject.getGuid(),
+                    callback: this.handleValidations,
                     val: true
                 })
             );
         }
     }
 
-    private updateState(mxObject = this.props.mxObject): ContainerState {
-        return {
-            isChecked: this.state.isChecked,
-            listViewAvailable: this.state.listViewAvailable,
-            alertMessage: "",
-            xpathConstraint: this.getAttributeValue(this.props.xpathConstraintAttribute, mxObject)
-        };
-    }
-
-    private subscriptionCallback(): void {
-        this.setState(this.updateState());
-        this.applyFilter();
+    private subscriptionCallback(guid: number, attr?: string, attrValue?: any): void {
+        logger.debug(this.props.uniqueid, "subscriptionCallback - guid:" + guid + " attr:" + attr + " attrValue:" + attrValue, this.props.group);
+        if (guid && attr && attrValue && attr === this.props.xpathConstraintAttribute) {
+            logger.debug(this.props.uniqueid, "subscriptionCallback - xpathConstraintAttribute change detected, applyFilter()", this.props.group);
+            this.setState(this.updateState());
+            this.setState({ xpathConstraintValue: attrValue as string });
+            this.applyFilter();
+        } else if (guid) {
+            this.setState(this.updateState());
+            if (this.state.xpathConstraintValue !== this.getXPathConstraint()) {
+                logger.debug(this.props.uniqueid, "subscriptionCallback - guid change detected with new xpathConstraintValue, applyFilter()", this.props.group);
+                this.setState({ xpathConstraintValue: this.getXPathConstraint() });
+                this.applyFilter();
+            }
+        }
     }
 
     private handleValidations(validations: mendix.lib.ObjectValidation[]): void {
+        logger.debug(this.props.uniqueid, "handleValidations", this.props.group);
         const validationMessage = validations[0].getErrorReason(this.props.xpathConstraintAttribute);
         validations[0].removeAttribute(this.props.xpathConstraintAttribute);
         if (validationMessage) {
@@ -188,7 +207,7 @@ export default class XPathConstraintContainer extends Component<ContainerProps, 
         const { targetListView } = this.state;
 
         if (targetListView && targetListView._datasource) {
-            const constraint = this.props.mxObject ? this.props.mxObject.get(this.props.xpathConstraintAttribute).toString() : "";
+            const constraint = this.state.xpathConstraintValue ? this.state.xpathConstraintValue : this.getXPathConstraint();
             const mxObjectId = this.props.mxObject ? this.props.mxObject.getGuid() : "";
             const hasContext = constraint.indexOf(`'[%CurrentObject%]'`) !== -1;
 
